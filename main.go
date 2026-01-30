@@ -3,8 +3,8 @@ package main
 import (
 	"log"
 	"net/http"
-	"url_shortner/db"
-	"url_shortner/routes"
+	"url_shortener/db"
+	"url_shortener/routes"
 )
 
 
