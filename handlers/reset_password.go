@@ -12,6 +12,7 @@ import (
 )
 
 // ResetPasswordRequest represents reset password payload
+
 type ResetPasswordRequest struct {
 	Email       string `json:"email"`
 	OTP         string `json:"otp"`

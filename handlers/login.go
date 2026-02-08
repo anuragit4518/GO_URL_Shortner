@@ -9,7 +9,6 @@ import (
 	"url_shortener/db"
 	"url_shortener/models"
 	"url_shortener/utils"
-
 )
 
 // LoginRequest represents login payload
@@ -18,16 +17,19 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
+// LoginResponse represents login response with JWT
+type LoginResponse struct {
+	Token string `json:"token"`
+}
+
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
-	
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
 	var req LoginRequest
-	err := json.NewDecoder(r.Body).Decode(&req)
-	if err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
@@ -37,18 +39,27 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	var user models.User
-	err = collection.FindOne(ctx, map[string]string{"email": req.Email}).Decode(&user)
+	if err := collection.FindOne(ctx, map[string]string{
+		"email": req.Email,
+	}).Decode(&user); err != nil {
+		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
+		return
+	}
+
+	if !utils.CheckPassword(req.Password, user.Password) {
+		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
+		return
+	}
+
+	
+	token, err := utils.GenerateJWT(user.Email)
 	if err != nil {
-		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
+		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
 		return
 	}
 
-	passwordValid := utils.CheckPassword(req.Password, user.Password)
-	if !passwordValid {
-		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Login successful"))
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(LoginResponse{
+		Token: token,
+	})
 }

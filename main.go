@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"url_shortener/db"
 	"url_shortener/routes"
+	"url_shortener/middlewares"
+
 )
 
 
@@ -19,10 +21,13 @@ func main()  {
 	log.Println("Server started on http://localhost:8080")
 	
 
-	err := http.ListenAndServe(":8080",nil)
-	if(err != nil){
-		log.Fatal(err)
-	}
+
+// ...
+
+	handler := middlewares.CORSMiddleware(http.DefaultServeMux)
+	log.Fatal(http.ListenAndServe(":8080", handler))
+
+	
 
 
 
